@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0.1a200724s
+Name=CuerdRec
+Name[es]=CuerdRec
+Comment=Sound Recorder
+Comment[es]=Grabadora de sonidos
+Exec=bash /usr/share/cuerdrec/inyect.sh
+Icon=/usr/share/cuerdrec/icons/rec.svg
+Terminal=false
+Type=Application
+Categories=GTK;AudioVideo;Audio;
