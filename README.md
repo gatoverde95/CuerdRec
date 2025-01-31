@@ -24,6 +24,7 @@
 - **Python 3.x**
 - **GTK 3.0** o **Qt 5+**
 - **ffmpeg** instalado en el sistema
+- Requiere un acompañante de camára, recomendados: **Webcamoid**, **Lomiri Camera**, **GNOME Cheese** o **guvcview**
 
 ## Instalación
 
