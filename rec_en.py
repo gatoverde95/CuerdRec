@@ -32,7 +32,13 @@ class AudioRecorder(Gtk.Window):
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.add(vbox)
 
-        # Create the menu bar
+        self.create_menu_bar(vbox)
+        self.create_notebook(vbox)
+
+        self.load_recordings()
+        self.update_buttons()
+
+    def create_menu_bar(self, vbox):
         menubar = Gtk.MenuBar()
         vbox.pack_start(menubar, False, False, 0)
 
@@ -54,10 +60,14 @@ class AudioRecorder(Gtk.Window):
         about_dialog_item.connect("activate", self.show_about_dialog)
         about_menu.append(about_dialog_item)
 
+    def create_notebook(self, vbox):
         notebook = Gtk.Notebook()
         vbox.pack_start(notebook, True, True, 0)
 
-        # Tab for recording controls
+        self.create_recording_tab(notebook)
+        self.create_options_tab(notebook)
+
+    def create_recording_tab(self, notebook):
         recording_tab = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         notebook.append_page(recording_tab, Gtk.Label(label="Recording"))
 
@@ -130,7 +140,7 @@ class AudioRecorder(Gtk.Window):
         self.delete_all_button.connect("clicked", self.on_delete_all_button_clicked)
         hbox_recordings.pack_start(self.delete_all_button, True, True, 0)
 
-        # Tab for options
+    def create_options_tab(self, notebook):
         options_tab = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         notebook.append_page(options_tab, Gtk.Label(label="Options"))
 
@@ -173,28 +183,36 @@ class AudioRecorder(Gtk.Window):
         self.quality_combo.set_active(0)
         options_grid.attach(self.quality_combo, 1, 1, 1, 1)
 
+        # Bitrate selector
+        self.bitrate_label = Gtk.Label(label="Bitrate:")
+        options_grid.attach(self.bitrate_label, 2, 1, 1, 1)
+        self.bitrate_combo = Gtk.ComboBoxText()
+        self.bitrate_combo.append_text("320k")
+        self.bitrate_combo.append_text("256k")
+        self.bitrate_combo.append_text("192k")
+        self.bitrate_combo.append_text("128k")
+        self.bitrate_combo.append_text("64k")
+        self.bitrate_combo.set_active(0)
+        options_grid.attach(self.bitrate_combo, 3, 1, 1, 1)
+
         # Sample rate selector
         self.sample_rate_label = Gtk.Label(label="Sample Rate:")
-        options_grid.attach(self.sample_rate_label, 2, 1, 1, 1)
+        options_grid.attach(self.sample_rate_label, 0, 2, 1, 1)
         self.sample_rate_combo = Gtk.ComboBoxText()
         self.sample_rate_combo.append_text("44100")
         self.sample_rate_combo.append_text("48000")
         self.sample_rate_combo.append_text("96000")
         self.sample_rate_combo.set_active(0)
-        options_grid.attach(self.sample_rate_combo, 3, 1, 1, 1)
+        options_grid.attach(self.sample_rate_combo, 1, 2, 1, 1)
 
         # Audio channels selector
         self.channels_label = Gtk.Label(label="Audio Channels:")
-        options_grid.attach(self.channels_label, 0, 2, 1, 1)
+        options_grid.attach(self.channels_label, 2, 2, 1, 1)
         self.channels_combo = Gtk.ComboBoxText()
         self.channels_combo.append_text("Mono")
         self.channels_combo.append_text("Stereo")
         self.channels_combo.set_active(1)
-        options_grid.attach(self.channels_combo, 1, 2, 1, 1)
-
-        # Load existing recordings
-        self.load_recordings()
-        self.update_buttons()
+        options_grid.attach(self.channels_combo, 3, 2, 1, 1)
 
     def update_time_label(self):
         while self.recording:
@@ -222,12 +240,9 @@ class AudioRecorder(Gtk.Window):
 
         # Get selected options
         source = self.source_combo.get_active_text()
-        quality = self.quality_combo.get_active_text()
         sample_rate = self.sample_rate_combo.get_active_text()
         channels = self.channels_combo.get_active_text()
-
-        # Adjust bitrate according to selected quality
-        bitrate = {"High": "320k", "Medium": "128k", "Low": "64k"}[quality]
+        bitrate = self.bitrate_combo.get_active_text()
 
         # Adjust the number of channels
         channel_option = "1" if channels == "Mono" else "2"
@@ -241,9 +256,18 @@ class AudioRecorder(Gtk.Window):
         file_format = self.format_combo.get_active_text()
         self.output_file = os.path.join(music_dir, f"recording_{current_time}.{file_format}")
 
-        self.ffmpeg_process = subprocess.Popen([
-            'ffmpeg', '-y', '-f', 'pulse', '-i', source, '-b:a', bitrate, '-ar', sample_rate, '-ac', channel_option, f'{self.output_file}'
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            self.ffmpeg_process = subprocess.Popen([
+                'ffmpeg', '-y', '-f', 'pulse', '-i', source, '-b:a', bitrate, '-ar', sample_rate, '-ac', channel_option, f'{self.output_file}'
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except Exception as e:
+            print(f"Error starting recording process: {e}")
+            self.recording = False
+            self.record_button.set_sensitive(True)
+            self.pause_button.set_sensitive(False)
+            self.stop_button.set_sensitive(False)
+            self.update_buttons()
+            return
 
         self.recording_thread = threading.Thread(target=self.update_time_label)
         self.recording_thread.start()
@@ -291,6 +315,10 @@ class AudioRecorder(Gtk.Window):
             if row[0]:  # If selected
                 self.output_file = row[1]
                 # Open the audio file with the system's default application
+                if not os.path.exists(self.output_file):
+                    print(f"The file '{self.output_file}' does not exist.")
+                    continue
+                
                 if platform.system() == "Linux":
                     subprocess.Popen(['xdg-open', self.output_file])
                 elif platform.system() == "Darwin":
@@ -302,6 +330,10 @@ class AudioRecorder(Gtk.Window):
         model = treeview.get_model()
         self.output_file = model[path][1]
         # Open the audio file with the system's default application
+        if not os.path.exists(self.output_file):
+            print(f"The file '{self.output_file}' does not exist.")
+            return
+        
         if platform.system() == "Linux":
             subprocess.Popen(['xdg-open', self.output_file])
         elif platform.system() == "Darwin":
@@ -327,14 +359,20 @@ class AudioRecorder(Gtk.Window):
     def on_delete_button_clicked(self, widget): #pylint: disable=unused-argument
         for row in self.recording_list_store:
             if row[0]:
-                os.remove(row[1])
+                try:
+                    os.remove(row[1])
+                except Exception as e:
+                    print(f"Error deleting the file {row[1]}: {e}")
         self.recording_list_store.clear()
         self.load_recordings()
         self.update_buttons()
 
     def on_delete_all_button_clicked(self, widget): #pylint: disable=unused-argument
         for row in self.recording_list_store:
-            os.remove(row[1])
+            try:
+                os.remove(row[1])
+            except Exception as e:
+                print(f"Error deleting the file {row[1]}: {e}")
         self.recording_list_store.clear()
         self.load_recordings()
         self.update_buttons()
@@ -361,15 +399,15 @@ class AudioRecorder(Gtk.Window):
     def show_about_dialog(self, widget=None): #pylint: disable=unused-argument
         about_dialog = Gtk.AboutDialog()
         about_dialog.set_program_name("CuerdRec")
-        about_dialog.set_version("1.0 v110125a Elena")
-        about_dialog.set_comments("A simple application for recording sounds using ffmpeg, Python, and GTK.")
+        about_dialog.set_version("1.0 v120225a Elena")
+        about_dialog.set_comments("A simple application for recording sounds using ffmpeg, Python and GTK.")
         about_dialog.set_license_type(Gtk.License.GPL_3_0)
         script_dir = os.path.dirname(os.path.realpath(__file__))
         logo_path = os.path.join(script_dir, "/usr/share/cuerdrec/icons/rec.svg")
         about_dialog.set_authors([
             "Ale D.M", "Leo H. Pérez (GatoVerde95)", "Pablo G.", "Welkis", "GatoVerde95 Studios"
         ])
-        about_dialog.set_copyright("© 2024 CuerdOS")
+        about_dialog.set_copyright("© 2025 CuerdOS")
         
         if os.path.exists(logo_path):
             logo_pixbuf = GdkPixbuf.Pixbuf.new_from_file(logo_path)
