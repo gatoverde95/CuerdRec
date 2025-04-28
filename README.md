@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <img src="assets/capture1.png" alt="Captura 1" width="900"/>
+  <img src="captures/capture_rec1.png" alt="Captura 1" width="900"/>
 </p>
 
 
-**CuerdRec** es un grabador de sonidos ligero y fácil de usar para CuerdOS GNU/Linux. Está construido con **Python**, **GTK/Qt**, **ffmpeg** y **Ruby**, ofreciendo una herramienta eficiente para grabar audio de alta calidad.
+**CuerdRec** es un grabador de sonidos ligero y fácil de usar para CuerdOS GNU/Linux. Está construido con **Python**, **GTK/Qt**, **ffmpeg** y **Lua**, ofreciendo una herramienta eficiente para grabar audio de alta calidad.
 
 ## Características
 
@@ -18,9 +18,12 @@
 - **Compatible con varios formatos de audio**: Gracias a la integración de **ffmpeg**, soporta una amplia gama de formatos.
 - **Fácil de usar**: Permite grabaciones rápidas sin complicaciones.
 
+## Distros Compatibles
+
+- **Debian 12+**, **MX Linux 21+**, **Linux Mint (Base Debian/Ubuntu)**, **KDE Neón**, **antiX**, **PeppermintOS (Base Debian/Devuan)**, **wattOS**, **Huayra**
+
 ## Requisitos
 
-- **CuerdOS GNU/Linux**
 - **Python 3.x**
 - **GTK 3.0** o **Qt 5+**
 - **ffmpeg** instalado en el sistema
@@ -33,15 +36,8 @@ Clona el repositorio y ejecuta la aplicación:
 ```bash
 git clone https://github.com/gatoverde95/CuerdRec.git
 cd CuerdRec
-python3 rec.py
+python3 cuerdrec.py
 ```
-
-## Uso
-
-1. Ejecuta `python3 conkyman.py`.
-2. Selecciona un tema de la lista o personaliza los colores.
-3. Aplica los cambios y observa la vista previa en Conky.
-4. Guarda la configuración y disfruta de tu nuevo tema.
 
 ## Contribuir
 
